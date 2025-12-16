@@ -12,36 +12,31 @@ class ImageGenerator:
     def generate(self, prompt, style, steps, guidance):
         full_prompt = f"{prompt}, {style} style, ultra detailed, cinematic lighting"
 
-        payload = {"inputs": full_prompt}
-
         response = requests.post(
             self.api_url,
             headers=self.headers,
-            json=payload,
+            json={"inputs": full_prompt},
             timeout=120
         )
 
-        # ❌ HTTP error
+        # ❌ API failed
         if response.status_code != 200:
             raise RuntimeError(
-                f"API error {response.status_code}: {response.text}"
+                f"HF API error {response.status_code}: {response.text}"
             )
 
-        # ❌ JSON response (model loading / error)
-        if response.headers.get("content-type", "").startswith("application/json"):
-            error_msg = response.json().get("error", "Unknown API error")
+        content_type = response.headers.get("content-type", "")
+
+        # ❌ Model loading / error / HTML page
+        if not content_type.startswith("image/"):
             raise RuntimeError(
-                f"Model not ready: {error_msg}\nPlease wait 30–60 seconds and try again."
+                "Model is loading or rate-limited.\n"
+                "Please wait 30–60 seconds and click Generate again."
             )
 
-        # ❌ Empty response
-        if not response.content:
-            raise RuntimeError("Empty response from model.")
+        # ❌ Empty bytes
+        if len(response.content) < 1000:
+            raise RuntimeError("Received empty image data.")
 
-        # ✅ Valid image
-        try:
-            return Image.open(BytesIO(response.content)).convert("RGB")
-        except Exception:
-            raise RuntimeError(
-                "Received non-image data from API. Try again in a few seconds."
-            )
+        # ✅ Safe to load
+        return Image.open(BytesIO(response.content)).convert("RGB")
