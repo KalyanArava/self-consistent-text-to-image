@@ -3,33 +3,23 @@ from diffusers import StableDiffusionPipeline
 
 class ImageGenerator:
     def __init__(self):
-        self.device = "cpu"
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
         self.pipe = StableDiffusionPipeline.from_pretrained(
             "runwayml/stable-diffusion-v1-5",
-            torch_dtype=torch.float32
-        ).to(self.device)
+            torch_dtype=torch.float16 if self.device == "cuda" else torch.float32
+        )
 
-        self.pipe.enable_attention_slicing()
+        self.pipe = self.pipe.to(self.device)
 
-    def generate(self, prompt, style, steps=18, guidance=7.5):
-        style_prompts = {
-            "Cinematic": "cinematic lighting, dramatic shadows, ultra-detailed, film still, professional color grading",
-            "Portrait": "sharp facial features, soft lighting, DSLR photo, 85mm lens, shallow depth of field",
-            "Anime": "anime style, vibrant colors, clean line art, studio ghibli, high detail",
-            "Landscape": "wide angle, epic scenery, natural lighting, HDR, ultra realistic",
-            "Product": "studio lighting, clean background, sharp focus, commercial photography",
-            "Fantasy": "fantasy art, magical lighting, epic atmosphere, concept art",
-        }
+        if self.device == "cpu":
+            self.pipe.enable_attention_slicing()
 
-        final_prompt = f"{prompt}, {style_prompts.get(style, '')}"
-
-        image = self.pipe(
-            prompt=final_prompt,
+    def generate(self, prompt, steps=20, guidance=7.5):
+        return self.pipe(
+            prompt,
             num_inference_steps=steps,
             guidance_scale=guidance,
             height=512,
             width=512
         ).images[0]
-
-        return image
