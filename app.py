@@ -4,11 +4,11 @@ from utils.image_enhancer import upscale_and_enhance
 from io import BytesIO
 
 st.set_page_config(
-    page_title="AI Image Generator",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_title="Self Consistent Text to Image",
+    layout="wide"
 )
 
+st.title("🎨 Self-Consistent Text-to-Image Generator")
 # ---------- STYLE ----------
 st.markdown("""
 <style>
