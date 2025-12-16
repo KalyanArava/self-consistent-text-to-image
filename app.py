@@ -55,7 +55,7 @@ generate = st.button("🚀 Generate")
 
 if generate and prompt.strip():
     try:
-        with st.spinner("🎨 Generating image (first run may take ~1 minute)..."):
+        with st.spinner("🎨 Generating image (first run may take ~1 min)..."):
             image = generator.generate(prompt, style, steps, guidance)
 
         st.session_state["image"] = image
@@ -63,6 +63,7 @@ if generate and prompt.strip():
 
     except Exception as e:
         st.warning(str(e))
+
 
 elif generate:
     st.warning("Please enter a prompt.")
