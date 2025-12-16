@@ -54,11 +54,16 @@ prompt = st.text_area(
 generate = st.button("🚀 Generate")
 
 if generate and prompt.strip():
-    with st.spinner("🎨 Generating image..."):
-        image = generator.generate(prompt, style, steps, guidance)
+    try:
+        with st.spinner("🎨 Generating image (first run may take ~1 min)..."):
+            image = generator.generate(prompt, style, steps, guidance)
 
-    st.session_state["image"] = image
-    st.image(image, caption="Generated Image", use_container_width=True)
+        st.session_state["image"] = image
+        st.image(image, caption="Generated Image", use_container_width=True)
+
+    except Exception as e:
+        st.error(str(e))
+
 
 elif generate:
     st.warning("Please enter a prompt.")
