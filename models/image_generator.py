@@ -12,9 +12,7 @@ class ImageGenerator:
     def generate(self, prompt, style, steps, guidance):
         full_prompt = f"{prompt}, {style} style, ultra detailed, cinematic lighting"
 
-        payload = {
-            "inputs": full_prompt
-        }
+        payload = {"inputs": full_prompt}
 
         response = requests.post(
             self.api_url,
@@ -23,18 +21,27 @@ class ImageGenerator:
             timeout=120
         )
 
-        # ❌ API error
+        # ❌ HTTP error
         if response.status_code != 200:
             raise RuntimeError(
-                f"HuggingFace API error {response.status_code}: {response.text}"
+                f"API error {response.status_code}: {response.text}"
             )
 
-        # ❌ Model loading / JSON response
-        content_type = response.headers.get("content-type", "")
-        if "image" not in content_type:
+        # ❌ JSON response (model loading / error)
+        if response.headers.get("content-type", "").startswith("application/json"):
+            error_msg = response.json().get("error", "Unknown API error")
             raise RuntimeError(
-                "Model is loading or API limit reached. Please try again in 30–60 seconds."
+                f"Model not ready: {error_msg}\nPlease wait 30–60 seconds and try again."
             )
+
+        # ❌ Empty response
+        if not response.content:
+            raise RuntimeError("Empty response from model.")
 
         # ✅ Valid image
-        return Image.open(BytesIO(response.content))
+        try:
+            return Image.open(BytesIO(response.content)).convert("RGB")
+        except Exception:
+            raise RuntimeError(
+                "Received non-image data from API. Try again in a few seconds."
+            )
