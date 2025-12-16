@@ -24,10 +24,11 @@ st.markdown("""
 
 # ---------- LOAD MODEL ----------
 @st.cache_resource
-def load_model():
+def load_models():
+    from models.image_generator import ImageGenerator
     return ImageGenerator()
 
-generator = load_model()
+generator = load_models()
 
 # ---------- SIDEBAR ----------
 st.sidebar.markdown("## 🎛 Settings")
@@ -82,3 +83,4 @@ if "image" in st.session_state:
             file_name="enhanced.png",
             mime="image/png"
         )
+st.success("✅ App started successfully")
