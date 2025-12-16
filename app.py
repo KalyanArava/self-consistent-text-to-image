@@ -42,8 +42,8 @@ steps = st.sidebar.slider("🌀 Steps", 10, 30, 18)
 guidance = st.sidebar.slider("🎯 Guidance", 5.0, 12.0, 7.5)
 
 # ---------- MAIN ----------
-st.markdown("# 🖼 AI Image Generator")
-st.markdown("### Midjourney / DALL·E–style")
+st.markdown("# 🎨 AI Image Generator")
+st.markdown("### K–style")
 
 prompt = st.text_area(
     "✍️ Prompt",
