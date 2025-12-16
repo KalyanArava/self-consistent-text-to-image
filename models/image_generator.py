@@ -1,40 +1,34 @@
-import requests
+import os
+import torch
+from diffusers import StableDiffusionPipeline
 from PIL import Image
-from io import BytesIO
 
 class ImageGenerator:
     def __init__(self):
-        self.api_url = "https://api-inference.huggingface.co/models/stabilityai/sd-turbo"
-        self.headers = {
-            "Authorization": "Bearer YOUR_HF_TOKEN"
-        }
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    def generate(self, prompt, style, steps, guidance):
-        full_prompt = f"{prompt}, {style} style, high quality, detailed"
-
-        response = requests.post(
-            self.api_url,
-            headers=self.headers,
-            json={
-                "inputs": full_prompt,
-                "parameters": {
-                    "guidance_scale": guidance,
-                    "num_inference_steps": steps
-                }
-            },
-            timeout=120
+        self.pipe = StableDiffusionPipeline.from_pretrained(
+            "runwayml/stable-diffusion-v1-5",
+            torch_dtype=torch.float16 if self.device == "cuda" else torch.float32,
+            use_auth_token=os.getenv("HF_TOKEN")
         )
 
-        if response.status_code != 200:
-            raise RuntimeError(f"HF API error: {response.text}")
+        self.pipe.to(self.device)
 
-        content_type = response.headers.get("content-type", "")
+        # Optimizations
+        self.pipe.enable_attention_slicing()
+        if self.device == "cpu":
+            self.pipe.enable_sequential_cpu_offload()
 
-        # 🚨 THIS IS THE KEY FIX
-        if not content_type.startswith("image/"):
-            raise RuntimeError(
-                "⚠️ Model is busy or loading.\n"
-                "Please wait 20–30 seconds and click Generate again."
-            )
+    def generate(self, prompt, style, steps=18, guidance=7.5):
+        full_prompt = f"{prompt}, {style} style, ultra-detailed, cinematic lighting, sharp focus"
 
-        return Image.open(BytesIO(response.content)).convert("RGB")
+        image = self.pipe(
+            prompt=full_prompt,
+            num_inference_steps=steps,
+            guidance_scale=guidance,
+            height=512,
+            width=512
+        ).images[0]
+
+        return image
