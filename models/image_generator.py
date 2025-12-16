@@ -20,8 +20,21 @@ class ImageGenerator:
             self.api_url,
             headers=self.headers,
             json=payload,
-            timeout=60
+            timeout=120
         )
 
-        image = Image.open(BytesIO(response.content))
-        return image
+        # ❌ API error
+        if response.status_code != 200:
+            raise RuntimeError(
+                f"HuggingFace API error {response.status_code}: {response.text}"
+            )
+
+        # ❌ Model loading / JSON response
+        content_type = response.headers.get("content-type", "")
+        if "image" not in content_type:
+            raise RuntimeError(
+                "Model is loading or API limit reached. Please try again in 30–60 seconds."
+            )
+
+        # ✅ Valid image
+        return Image.open(BytesIO(response.content))
