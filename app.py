@@ -7,7 +7,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("🎨 Self-Consistent Text-to-Image Generator")
+st.title("Self-Consistent Text-to-Image Generator")
 
 # ---------- STYLE ----------
 st.markdown("""
