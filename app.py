@@ -1,6 +1,5 @@
 import streamlit as st
 from models.image_generator import ImageGenerator
-from utils.image_enhancer import upscale_and_enhance
 from io import BytesIO
 
 st.set_page_config(
@@ -9,6 +8,7 @@ st.set_page_config(
 )
 
 st.title("🎨 Self-Consistent Text-to-Image Generator")
+
 # ---------- STYLE ----------
 st.markdown("""
 <style>
@@ -25,10 +25,10 @@ st.markdown("""
 # ---------- LOAD MODEL ----------
 @st.cache_resource
 def load_models():
-    from models.image_generator import ImageGenerator
     return ImageGenerator()
 
 generator = load_models()
+st.success("✅ Model loaded successfully")
 
 # ---------- SIDEBAR ----------
 st.sidebar.markdown("## 🎛 Settings")
@@ -62,25 +62,3 @@ if generate and prompt.strip():
 
 elif generate:
     st.warning("Please enter a prompt.")
-
-# ---------- UPSCALE ----------
-if "image" in st.session_state:
-    st.markdown("## ✨ Enhance Image")
-
-    if st.button("🔍 Upscale & Enhance"):
-        with st.spinner("🚀 Enhancing quality..."):
-            enhanced = upscale_and_enhance(st.session_state["image"])
-
-        st.image(enhanced, caption="Enhanced Image", use_container_width=True)
-
-        # Download
-        buffer = BytesIO()
-        enhanced.save(buffer, format="PNG")
-
-        st.download_button(
-            "⬇ Download Enhanced Image",
-            data=buffer.getvalue(),
-            file_name="enhanced.png",
-            mime="image/png"
-        )
-st.success("✅ App started successfully")
