@@ -9,21 +9,16 @@ class ImageGenerator:
             "https://router.huggingface.co/hf-inference/models/"
             "stabilityai/stable-diffusion-2-1"
         )
-
         self.headers = {
-            "Authorization": f"Bearer {os.environ['HF_TOKEN']}",
-            "Content-Type": "application/json"
+            "Authorization": f"Bearer {os.environ.get('HF_TOKEN')}"
         }
 
-    def generate(self, prompt, style, steps=20, guidance=7.5):
+    def generate(self, prompt, style="Cinematic", steps=18, guidance=7.5):
         payload = {
             "inputs": f"{prompt}, {style} style",
             "parameters": {
                 "num_inference_steps": steps,
                 "guidance_scale": guidance
-            },
-            "options": {
-                "wait_for_model": True
             }
         }
 
@@ -31,12 +26,10 @@ class ImageGenerator:
             self.api_url,
             headers=self.headers,
             json=payload,
-            timeout=180
+            timeout=120
         )
 
         if response.status_code != 200:
-            raise RuntimeError(
-                f"HF API Error {response.status_code}: {response.text}"
-            )
+            raise RuntimeError(response.text)
 
         return Image.open(BytesIO(response.content))
