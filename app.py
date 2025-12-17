@@ -1,6 +1,11 @@
+import os
 import streamlit as st
 from models.image_generator import ImageGenerator
 from io import BytesIO
+
+if "HF_TOKEN" not in os.environ:
+    st.error("HF_TOKEN not found. Please add it in Streamlit Secrets.")
+    st.stop()
 
 st.set_page_config(
     page_title="Self Consistent Text to Image",
