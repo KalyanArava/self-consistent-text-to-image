@@ -1,34 +1,29 @@
 import os
-import torch
-from diffusers import StableDiffusionPipeline
+import requests
 from PIL import Image
+from io import BytesIO
 
 class ImageGenerator:
     def __init__(self):
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.api_url = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1"
+        self.headers = {
+            "Authorization": f"Bearer {os.environ['HF_TOKEN']}"
+        }
 
-        self.pipe = StableDiffusionPipeline.from_pretrained(
-            "runwayml/stable-diffusion-v1-5",
-            torch_dtype=torch.float16 if self.device == "cuda" else torch.float32,
-            use_auth_token=os.getenv("HF_TOKEN")
+    def generate(self, prompt, style, steps=20, guidance=7.5):
+        payload = {
+            "inputs": f"{prompt}, {style} style",
+            "options": {"wait_for_model": True}
+        }
+
+        response = requests.post(
+            self.api_url,
+            headers=self.headers,
+            json=payload,
+            timeout=120
         )
 
-        self.pipe.to(self.device)
+        if response.status_code != 200:
+            raise RuntimeError(response.text)
 
-        # Optimizations
-        self.pipe.enable_attention_slicing()
-        if self.device == "cpu":
-            self.pipe.enable_sequential_cpu_offload()
-
-    def generate(self, prompt, style, steps=18, guidance=7.5):
-        full_prompt = f"{prompt}, {style} style, ultra-detailed, cinematic lighting, sharp focus"
-
-        image = self.pipe(
-            prompt=full_prompt,
-            num_inference_steps=steps,
-            guidance_scale=guidance,
-            height=512,
-            width=512
-        ).images[0]
-
-        return image
+        return Image.open(BytesIO(response.content))
