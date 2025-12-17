@@ -1,20 +1,35 @@
 import os
 import streamlit as st
 from models.image_generator import ImageGenerator
-from io import BytesIO
 
-if "HF_TOKEN" not in os.environ:
-    st.error("HF_TOKEN not found. Please add it in Streamlit Secrets.")
-    st.stop()
-
+# --------------------------------------------------
+# STREAMLIT PAGE CONFIG (MUST BE FIRST STREAMLIT CALL)
+# --------------------------------------------------
 st.set_page_config(
     page_title="Self Consistent Text to Image",
     layout="wide"
 )
 
-st.title("Self-Consistent Text-to-Image Generator")
+# --------------------------------------------------
+# LOAD HF TOKEN (STREAMLIT CLOUD SAFE)
+# --------------------------------------------------
+HF_TOKEN = None
 
-# ---------- STYLE ----------
+if "HF_TOKEN" in st.secrets:
+    HF_TOKEN = st.secrets["HF_TOKEN"]
+    os.environ["HF_TOKEN"] = HF_TOKEN
+else:
+    st.error("❌ HF_TOKEN not found. Add it in Streamlit Cloud → Settings → Secrets")
+    st.stop()
+
+# --------------------------------------------------
+# TITLE
+# --------------------------------------------------
+st.title("🎨 Self-Consistent Text-to-Image Generator")
+
+# --------------------------------------------------
+# CUSTOM STYLE
+# --------------------------------------------------
 st.markdown("""
 <style>
 .stButton>button {
@@ -27,15 +42,19 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ---------- LOAD MODEL ----------
-@st.cache_resource
-def load_models():
+# --------------------------------------------------
+# LOAD MODEL (CACHED)
+# --------------------------------------------------
+@st.cache_resource(show_spinner=True)
+def load_model():
     return ImageGenerator()
 
-generator = load_models()
+generator = load_model()
 st.success("✅ Model loaded successfully")
 
-# ---------- SIDEBAR ----------
+# --------------------------------------------------
+# SIDEBAR CONTROLS
+# --------------------------------------------------
 st.sidebar.markdown("## 🎛 Settings")
 
 style = st.sidebar.selectbox(
@@ -46,9 +65,10 @@ style = st.sidebar.selectbox(
 steps = st.sidebar.slider("🌀 Steps", 10, 30, 18)
 guidance = st.sidebar.slider("🎯 Guidance", 5.0, 12.0, 7.5)
 
-# ---------- MAIN ----------
-st.markdown("# 🎨 AI Image Generator")
-st.markdown("### K–style")
+# --------------------------------------------------
+# MAIN UI
+# --------------------------------------------------
+st.markdown("## 🖼 AI Image Generator")
 
 prompt = st.text_area(
     "✍️ Prompt",
@@ -57,18 +77,26 @@ prompt = st.text_area(
 )
 
 generate = st.button("🚀 Generate")
-if generate and prompt.strip():
-    try:
-        with st.spinner("🎨 Generating image (may take ~30s on first run)..."):
-            image = generator.generate(prompt, style, steps, guidance)
 
-        st.session_state["image"] = image
-        st.image(image, caption="Generated Image", use_container_width=True)
+# --------------------------------------------------
+# GENERATE IMAGE
+# --------------------------------------------------
+if generate:
+    if not prompt.strip():
+        st.warning("⚠️ Please enter a prompt.")
+    else:
+        try:
+            with st.spinner("🎨 Generating image (first run may take 3–5 minutes on Streamlit Cloud)…"):
+                image = generator.generate(
+                    prompt=prompt,
+                    style=style,
+                    steps=steps,
+                    guidance=guidance
+                )
 
-    except Exception as e:
-        st.error(str(e))
+            st.session_state["image"] = image
+            st.image(image, caption="Generated Image", use_container_width=True)
 
-
-
-elif generate:
-    st.warning("Please enter a prompt.")
+        except Exception as e:
+            st.error("❌ Image generation failed")
+            st.exception(e)
